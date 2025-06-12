@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="title">
+  Welcome, {{name}}!
+</h1>
+
+<h2> What's your prompt:</h2>
+<form method="GET" action="{{ url_for('main.prompt_area') }}">
+<div class="textfeld-container">
+  <textarea id="autofeld" name="prompt" placeholder="prompt here..."></textarea>
+            <input class="textfeld-container" type="submit" value="ask">
+
+</div>
+</form>
+{% endblock %}
