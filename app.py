@@ -1,9 +1,13 @@
-from flask_login import UserMixin
-from . import db
+from project import db, create_app, models
 
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key = True)
-    email =  db.Column(db.String, unique=True)
-    password = db.Column(db.String)
-    name = db.Column(db.String)
+app = create_app()
+
+if __name__ =='__main__':
+    with app.app_context():
+        db.create_all()
+
+    app.run(debug=True)
+
+
+
 
