@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-api_key = os.getenv("CHAT_API")
+api_key = os.getenv("API_KEY")
 client = openai.OpenAI(api_key = api_key)
 
 
