@@ -5,12 +5,36 @@
   Welcome, {{name}}!
 </h1>
 
+
 <h2> What's your prompt:</h2>
-<form method="GET" action="{{ url_for('main.prompt_area') }}">
-<div class="textfeld-container">
+<form method="GET" action="{{ url_for('main.prompt_area',  user_id=current_user.id) }}">
+
+    <div class="textfeld-container">
+          <div style="display: flex; gap: 1rem; align-items: center;">
+    <label>
+      <input type="radio" name="modell" value="grog" {% if selected_model == 'grog' %}checked{% endif %}>
+      Grogmodel
+    </label>
+    <label>
+      <input type="radio" name="modell" value="chatgpt" {% if selected_model == 'chatgpt' %}checked{% endif %}>
+      ChatGPT-Model
+    </label>
+  </div>
   <textarea id="autofeld" name="prompt" placeholder="prompt here..."></textarea>
             <input class="textfeld-container" type="submit" value="ask">
 
 </div>
 </form>
+{% if chat_history %}
+<div class="output">
+    <ul>
+
+        {% for chat in chat_history %}
+    <li><strong>you:</strong>{{ chat.question }}</li>
+        <li><strong>Tasos:</strong>{{ chat.answer }}</li>
+        {% endfor %}
+    </ul>
+
+</div>
+{% endif %}
 {% endblock %}
