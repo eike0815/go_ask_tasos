@@ -4,31 +4,27 @@ import os
 
 load_dotenv()
 api_key = os.getenv("API_KEY")
-client = openai.OpenAI(api_key = api_key)
-
+client = openai.OpenAI(api_key=api_key)
 
 # Specify the model to use
 model = "gpt-4o-mini"
 
-def chat_answers_question(prompt_from_area):
-    # Prompt the user for input
-
+def chat_answers_question(prompt_from_area, system_prompt_override=None):
     user_prompt = prompt_from_area
     if user_prompt:
-        # Generate a response using the OpenAI API
+        system_message = system_prompt_override or {"role": "system", "content": "You are a helpful assistant."}
+
         response = client.chat.completions.create(
             model=model,
             messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
+                system_message,
                 {"role": "user", "content": user_prompt}
-           ],
-            #we will integrate something to play with temp and token
+            ],
             temperature=0.7,
             max_tokens=150
         )
 
-        # Display the generated text
+        # Keep your original return: tuple of two strings
         return "Generated text:\n", response.choices[0].message.content
-    else: return "where is the question"
-
-#chat_answers_question("tell a joke")
+    else:
+        return "where is the question"

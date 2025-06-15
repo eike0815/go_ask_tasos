@@ -17,24 +17,22 @@ model = "llama-3.3-70b-versatile"
 system_prompt = "You are an AI-model."
 
 # User's request
-def give_answer(prompt_from_area):
-    user_prompt = f"""here some prompting {prompt_from_area}
-    """
+def give_answer(prompt_from_area, system_prompt_override=None):
+    user_prompt = f"""here some prompting {prompt_from_area}"""
 
+    system_message = system_prompt_override or {
+        "role": "system",
+        "content": "You are an AI-model."
+    }
 
-    # Generate a response using the Groq API
     response = client.chat.completions.create(
         model=model,
         messages=[
-            {"role": "system", "content": system_prompt},
+            system_message,
             {"role": "user", "content": user_prompt}
         ]
     )
 
-    # Display the generated text
-
+    # Return bleibt ein Tuple aus zwei Strings wie zuvor
     text = "Generated text:\n", response.choices[0].message.content
     return text
-
-
-

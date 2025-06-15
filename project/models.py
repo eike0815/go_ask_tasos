@@ -17,10 +17,11 @@ class Chat(db.Model):
     model = db.Column(db.String, unique=False, nullable=True)
    # created_at = db.Column(db.Datetime, default=datetime.utcnow)
 
-#macht der Sinn? wäre eine crud möglichkeit
-class Demands(db.Model):
-    id = db.Column(db.Integer, primary_key = True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+
+class SystemPrompt(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    role = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
 
 
 

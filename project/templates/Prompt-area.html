@@ -8,6 +8,18 @@
 
 <h2> What's your prompt:</h2>
 <form method="GET" action="{{ url_for('main.prompt_area',  user_id=current_user.id) }}">
+    <div>
+      <label for="system_prompt_id">Systemprompt wählen:</label>
+      <select name="system_prompt_id" id="system_prompt_id">
+          <option value="">-- kein Systemprompt --</option>
+          {% for prompt in system_prompts %}
+              <option value="{{ prompt.id }}"
+                {% if selected_system_prompt_id == prompt.id|string %}selected{% endif %}>
+                {{ prompt.role }} – {{ prompt.content[:40] }}...
+              </option>
+          {% endfor %}
+      </select>
+    </div>
 
     <div class="textfeld-container">
           <div style="display: flex; gap: 1rem; align-items: center;">
