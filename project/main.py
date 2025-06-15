@@ -9,7 +9,6 @@ main = Blueprint('main', __name__)
 @main.route('/')
 def index():
     return render_template('index.html')
-
 @main.route('/Prompt-area', methods=["POST", "GET"])
 @login_required
 def prompt_area():
@@ -20,40 +19,54 @@ def prompt_area():
     new_prompt = request.args.get("prompt")
     system_prompt_id = request.args.get("system_prompt_id")  # NEU
 
-    # Bisherige Chat-Historie
+    # Chat-Historie abrufen
     chat_history = Chat.query.filter_by(user_id=user_id).order_by(Chat.id.asc()).all()
 
     # Alle verfügbaren Systemprompts laden (für Dropdown)
     system_prompts = SystemPrompt.query.all()
 
-    # Den ausgewählten Systemprompt auslesen (falls ID vorhanden)
+    # Prompt auswählen (wenn ID vorhanden)
     selected_system_prompt = SystemPrompt.query.get(system_prompt_id) if system_prompt_id else None
 
-    # Wenn neuer User-Prompt eingegeben wurde
+    # Defaults setzen (wenn nichts gewählt wurde)
+    system_msg = None
+    temperature = 0.7
+    max_tokens = 150
+
+    if selected_system_prompt:
+        system_msg = {
+            "role": selected_system_prompt.role,
+            "content": selected_system_prompt.content
+        }
+        temperature = selected_system_prompt.temperature
+        max_tokens = selected_system_prompt.max_tokens
+
+    # Wenn ein neuer Prompt vom Nutzer eingegeben wurde
     if new_prompt:
-        # Kontext (letzte 5 Einträge)
+        # Letzten Kontext zusammensetzen
         context = ""
-        for chat in chat_history[-5:]:
+        for chat in chat_history[-20:]:
             context += f"User: {chat.question}\nAI: {chat.answer}\n"
 
         combined_prompt = context + f"User: {new_prompt}"
 
-        # Modell antworten lassen
+        # Modell aufrufen
         if selected_model == "grog":
-            answer = grogmodel.give_answer(combined_prompt)
+            answer = grogmodel.give_answer(
+                combined_prompt,
+                system_prompt_override=system_msg,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
         elif selected_model == "chatgpt":
-            # Systemprompt optional als erste Nachricht mitschicken
-            system_msg = {
-                "role": selected_system_prompt.role,
-                "content": selected_system_prompt.content
-            } if selected_system_prompt else None
-
             answer = chatgptmodel.chat_answers_question(
                 combined_prompt,
-                system_prompt_override=system_msg  # <- du passt das Modell später an
+                system_prompt_override=system_msg,
+                temperature=temperature,
+                max_tokens=max_tokens
             )
 
-        # Chat-Eintrag speichern
+        # Ergebnis speichern
         new_chat = Chat(
             user_id=user_id,
             question=new_prompt,
@@ -63,7 +76,6 @@ def prompt_area():
         db.session.add(new_chat)
         db.session.commit()
 
-        # Chatverlauf neu laden
         chat_history = Chat.query.filter_by(user_id=user_id).order_by(Chat.id.asc()).all()
 
     return render_template(
@@ -71,9 +83,9 @@ def prompt_area():
         name=current_user.name,
         chat_history=chat_history,
         system_prompts=system_prompts,
-        selected_system_prompt_id=system_prompt_id
+        selected_system_prompt_id=system_prompt_id,
+        selected_model=selected_model
     )
-
 
 @main.route('/modification', methods=["GET", "POST"])
 @login_required
@@ -83,14 +95,23 @@ def modifier():
         prompt_id = request.form.get("id")
         role = request.form.get("role")
         content = request.form.get("content")
+        temperature = float(request.form.get("temperature", 0.7))
+        max_tokens = int(request.form.get("max_tokens", 150))
 
         if prompt_id:
             prompt = SystemPrompt.query.get(prompt_id)
             if prompt:
                 prompt.role = role
                 prompt.content = content
+                prompt.temperature = temperature
+                prompt.max_tokens = max_tokens
         else:
-            prompt = SystemPrompt(role=role, content=content)
+            prompt = SystemPrompt(
+                role=role,
+                content=content,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
             db.session.add(prompt)
 
         db.session.commit()

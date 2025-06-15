@@ -17,7 +17,7 @@ model = "llama-3.3-70b-versatile"
 system_prompt = "You are an AI-model."
 
 # User's request
-def give_answer(prompt_from_area, system_prompt_override=None):
+def give_answer(prompt_from_area, system_prompt_override=None, temperature=0.7, max_tokens=150):
     user_prompt = f"""here some prompting {prompt_from_area}"""
 
     system_message = system_prompt_override or {
@@ -30,9 +30,9 @@ def give_answer(prompt_from_area, system_prompt_override=None):
         messages=[
             system_message,
             {"role": "user", "content": user_prompt}
-        ]
+        ],
+        temperature=temperature,
+        max_tokens=max_tokens
     )
 
-    # Return bleibt ein Tuple aus zwei Strings wie zuvor
-    text = "Generated text:\n", response.choices[0].message.content
-    return text
+    return "Generated text:\n", response.choices[0].message.content
