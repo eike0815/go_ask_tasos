@@ -20,7 +20,12 @@
           {% endfor %}
       </select>
     </div>
-
+<div style="margin-top: 1rem;">
+  <label>
+    <input type="checkbox" name="use_rag" {% if request.args.get('use_rag') == 'on' %}checked{% endif %}>
+    use knowledge database (RAG)
+  </label>
+</div>
     <div class="textfeld-container">
           <div style="display: flex; gap: 1rem; align-items: center;">
     <label>
