@@ -24,7 +24,6 @@ def index():
     """Render homepage."""
     return render_template('index.html')
 
-
 @main.route('/Prompt-area', methods=["POST", "GET"])
 @login_required
 def prompt_area():
@@ -41,10 +40,11 @@ def prompt_area():
     new_prompt = request.args.get("prompt")
     system_prompt_id = request.args.get("system_prompt_id")
 
-    # Fetch chat history for current user
-    chat_history = Chat.query.filter_by(user_id=user_id).order_by(Chat.id.asc()).all()
-    system_prompts = SystemPrompt.query.all()
+    # Fetch last 10 chat entries for display, ordered oldest to newest
+    chat_history = Chat.query.filter_by(user_id=user_id).order_by(Chat.id.desc()).limit(10).all()
+    chat_history.reverse()
 
+    system_prompts = SystemPrompt.query.all()
     selected_system_prompt = SystemPrompt.query.get(system_prompt_id) if system_prompt_id else None
 
     # Defaults for system prompt parameters
@@ -61,9 +61,13 @@ def prompt_area():
         max_tokens = selected_system_prompt.max_tokens
 
     if new_prompt:
-        # Build context from recent chat history (last 5 exchanges)
+        # Fetch up to last 30 chats for context, ordered oldest to newest
+        context_chats = Chat.query.filter_by(user_id=user_id).order_by(Chat.id.desc()).limit(30).all()
+        context_chats.reverse()
+
+        # Build context string from those chats
         context = ""
-        for chat in chat_history[-5:]:
+        for chat in context_chats:
             context += f"User: {chat.question}\nAI: {chat.answer}\n"
 
         # Check if Retrieval-Augmented Generation (RAG) should be used
@@ -104,8 +108,9 @@ def prompt_area():
         db.session.add(new_chat)
         db.session.commit()
 
-        # Refresh chat history after adding new chat
-        chat_history = Chat.query.filter_by(user_id=user_id).order_by(Chat.id.asc()).all()
+        # Refresh last 10 chats for display, ordered oldest to newest
+        chat_history = Chat.query.filter_by(user_id=user_id).order_by(Chat.id.desc()).limit(10).all()
+        chat_history.reverse()
 
     return render_template(
         'Prompt-area.html',

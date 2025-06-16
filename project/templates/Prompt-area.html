@@ -9,7 +9,7 @@
 <h2> What's your prompt:</h2>
 <form method="GET" action="{{ url_for('main.prompt_area',  user_id=current_user.id) }}">
     <div>
-      <label for="system_prompt_id">Systemprompt wählen:</label>
+      <label for="system_prompt_id">choose a system-prompt:</label>
       <select name="system_prompt_id" id="system_prompt_id">
           <option value="">-- kein Systemprompt --</option>
           {% for prompt in system_prompts %}
