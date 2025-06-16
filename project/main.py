@@ -191,22 +191,15 @@ def rag_route():
 @main.route('/pimp-it', methods=['GET', 'POST'])
 @login_required
 def pimp_it():
-    """
-    Combined PDF upload + RAG question interface:
-    - Handles PDF file upload and builds vector index
-    - Lets user select from existing PDFs and index them
-    - Handles user query and returns generated answer
-    """
     answer = None
 
-    # Load list of existing PDFs from upload folder
     uploaded_files = [
         f for f in os.listdir(UPLOAD_FOLDER)
         if f.lower().endswith('.pdf')
     ]
 
     if request.method == 'POST':
-        # Handle new PDF upload
+        # Neue PDF hochladen und indexieren
         if 'pdf_file' in request.files and request.files['pdf_file'].filename:
             file = request.files['pdf_file']
             if file and allowed_file(file.filename):
@@ -214,17 +207,17 @@ def pimp_it():
                 filepath = os.path.join(UPLOAD_FOLDER, filename)
                 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
                 file.save(filepath)
-                # Index the uploaded PDF
                 ollama_rag.build_index_from_pdf(filepath)
+                ollama_rag.save_vector_db(filepath)  # <-- Speichern des Vektorindex
 
-        # Handle selection of existing PDF
+        # Bestehende PDF auswählen und Vektorindex laden
         elif request.form.get('selected_pdf'):
             selected_pdf = request.form.get('selected_pdf')
             filepath = os.path.join(UPLOAD_FOLDER, selected_pdf)
             if os.path.exists(filepath):
-                ollama_rag.build_index_from_pdf(filepath)
+                ollama_rag.load_vector_db(filepath)
 
-        # Handle user query
+        # Nutzeranfrage beantworten
         user_query = request.form.get('query')
         if user_query:
             answer = ollama_rag.generate_answer(user_query)
@@ -232,5 +225,5 @@ def pimp_it():
     return render_template(
         'pimp-it.html',
         answer=answer,
-        uploaded_files=uploaded_files  # <- for dropdown in HTML
+        uploaded_files=uploaded_files
     )
