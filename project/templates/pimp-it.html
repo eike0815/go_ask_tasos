@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Upload a new PDF</h2>
+<form method="POST" enctype="multipart/form-data">
+  <label for="pdf_file">Choose PDF:</label>
+  <input type="file" id="pdf_file" name="pdf_file" accept=".pdf">
+  <button type="submit">Upload & Index</button>
+</form>
+
+<hr>
+
+<h2>Select an existing PDF</h2>
+<form method="POST">
+  <label for="selected_pdf">Use one of the uploaded PDFs:</label>
+  <select name="selected_pdf" id="selected_pdf">
+    {% for pdf in uploaded_files %}
+      <option value="{{ pdf }}">{{ pdf }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" name="load_only" value="true">Load vector index</button>
+</form>
+
+<hr>
+
+<h2>Ask a question</h2>
+<form method="POST">
+  <label for="query">Your question:</label>
+  <input type="text" id="query" name="query" style="width: 60%;">
+  <button type="submit">Ask</button>
+</form>
+
+{% if answer %}
+  <hr>
+  <h3>Answer:</h3>
+  <div style="border: 1px solid #ccc; padding: 1em; background-color: #f8f8f8;">
+    {{ answer }}
+  </div>
+{% endif %}
+
+{% endblock %}

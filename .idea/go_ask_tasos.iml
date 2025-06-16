@@ -3,6 +3,10 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/index" />
+      <excludeFolder url="file://$MODULE_DIR$/project/uploads" />
+      <excludeFolder url="file://$MODULE_DIR$/project/vector_store" />
+      <excludeFolder url="file://$MODULE_DIR$/uploads" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.9 (go_ask_tasos)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

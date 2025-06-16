@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>create system prompts</h1>
+
+<!-- Formular für Create/Update -->
+<form method="POST" action="{{ url_for('main.modifier') }}">
+    <input type="hidden" name="id" value="{{ prompt_to_edit.id if prompt_to_edit else '' }}">
+
+    <!-- chooe a role with a radio button -->
+    <div>
+        <label>Role:</label><br>
+        <label>
+            <input type="radio" name="role" value="system"
+                   {% if prompt_to_edit and prompt_to_edit.role == 'system' %}checked{% endif %}>
+            system
+        </label>
+        <label>
+            <input type="radio" name="role" value="user"
+                   {% if prompt_to_edit and prompt_to_edit.role == 'user' %}checked{% endif %}>
+            user
+        </label>
+        <label>
+            <input type="radio" name="role" value="assistant"
+                   {% if prompt_to_edit and prompt_to_edit.role == 'assistant' %}checked{% endif %}>
+            assistant
+        </label>
+    </div>
+<!-- Temperature -->
+<div>
+  <label for="temperature">Temperature: <span id="temp-value">{{ prompt_to_edit.temperature if prompt_to_edit else 0.7 }}</span></label><br>
+  <input type="range" id="temperature" name="temperature" min="0" max="1" step="0.1"
+         value="{{ prompt_to_edit.temperature if prompt_to_edit else 0.7 }}"
+         oninput="document.getElementById('temp-value').innerText = this.value">
+</div>
+
+<!-- Max Tokens -->
+<div>
+  <label for="max_tokens">Max Tokens: <span id="tokens-value">{{ prompt_to_edit.max_tokens if prompt_to_edit else 150 }}</span></label><br>
+  <input type="range" id="max_tokens" name="max_tokens" min="50" max="1000" step="50"
+         value="{{ prompt_to_edit.max_tokens if prompt_to_edit else 150 }}"
+         oninput="document.getElementById('tokens-value').innerText = this.value">
+</div>
+    <!-- Inhalt -->
+    <div>
+        <label for="content">Rules and Commands:</label><br>
+        <textarea name="content" id="content" rows="4" cols="60" required>{{ prompt_to_edit.content if prompt_to_edit else '' }}</textarea>
+    </div>
+
+    <button type="submit">save</button>
+</form>
+
+<hr>
+
+<h2>existing Prompts</h2>
+<ul>
+    {% for p in prompts %}
+    <li>
+        <strong>{{ p.role }}</strong>: {{ p.content }}
+
+        <!-- delete -->
+        <form action="{{ url_for('main.delete_prompt', id=p.id) }}" method="POST" style="display:inline;">
+            <button type="submit">delete</button>
+        </form>
+
+        <!-- update -->
+        <form action="{{ url_for('main.modifier') }}" method="GET" style="display:inline;">
+            <input type="hidden" name="id" value="{{ p.id }}">
+            <button type="submit">Update</button>
+        </form>
+    </li>
+    {% else %}
+    <p>There are no Prompts!</p>
+    {% endfor %}
+</ul>
+{% endblock %}
