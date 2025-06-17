@@ -25,6 +25,19 @@ A locally running intelligent chatbot that either is modifiable or lets you quer
 git clone https://github.com/yourusername/go_ask_tasos.git
 cd go_ask_tasos
 
+
+Attention:
+🗂 Required Folders
+Before running the application, make sure the following folders exist in the project root:
+
+uploads/: this folder stores uploaded PDF files.
+vector_store/: this folder stores the vector index .pkl files generated from your PDFs.
+If these folders are not present, you can create them manually using the terminal:
+
+mkdir uploads vector_store
+💡 Make sure these folders are at the same level as your main Python scripts (e.g., main.py, app.py).
+
+
 2. Set up the Python environment
 
 python -m venv .venv

@@ -1,9 +1,7 @@
 {% extends "base.html" %}
-
 {% block content %}
-<h1 class="title">
-  Welcome, {{ name }}!
-</h1>
+
+<h1 class="title">Welcome, {{ name }}!</h1>
 
 <h2>What's your prompt:</h2>
 <form method="POST" action="{{ url_for('main.prompt_area') }}">
@@ -32,8 +30,8 @@
   </div>
 
   <div class="textfeld-container">
-    <textarea id="autofeld" name="prompt" placeholder="Enter your prompt here..."></textarea>
-    <input class="textfeld-container" type="submit" value="Ask">
+    <textarea id="autofeld" name="prompt" placeholder="Enter your prompt here..." required></textarea>
+    <input type="submit" value="Ask">
   </div>
 </form>
 
@@ -43,10 +41,9 @@
   <div class="chat-entry">
     <p><strong>You:</strong> {{ chat.question }}</p>
     <p><strong>AI:</strong> {{ chat.answer }}</p>
-
     <form method="POST" style="display:inline;">
       <input type="hidden" name="delete_chat_id" value="{{ chat.id }}">
-      <button type="submit" onclick="return confirm('Delete this message?')">Delete</button>
+      <button type="submit" onclick="return confirm('Delete this message?')">🗑 Delete</button>
     </form>
   </div>
 {% endfor %}

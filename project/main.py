@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, session, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from project import grogmodel, chatgptmodel, rag, ollama_rag
+from project import grogmodel, chatgptmodel, ollama_rag
 from . import db
 from .models import Chat, User, SystemPrompt
 import os
@@ -24,57 +24,60 @@ def index():
     """Render homepage."""
     return render_template('index.html')
 
-@main.route('/Prompt-area', methods=["POST", "GET"])
+@main.route('/Prompt-area', methods=["GET", "POST"])
 @login_required
 def prompt_area():
     """
     Main chat interface:
-    - Handles user prompts
-    - Supports model selection (grog, chatgpt)
-    - Displays chat history and system prompts for the user
+    - Handles user prompts via POST
+    - Supports model and system prompt selection
+    - Displays the last 10 chat messages
     - Allows deletion of individual chat messages
     """
     user_id = current_user.id
-    selected_model = request.args.get("modell", "grog")
-    new_prompt = request.args.get("prompt")
-    system_prompt_id = request.args.get("system_prompt_id")
 
-    # Handle deletion
-    delete_id = request.form.get("delete_chat_id")
-    if delete_id:
+    # Load system prompts for dropdown
+    system_prompts = SystemPrompt.query.all()
+
+    # Default values
+    selected_model = "grog"
+    system_prompt_id = None
+    answer = None
+
+    # Deletion logic (POST only)
+    if request.method == "POST" and "delete_chat_id" in request.form:
+        delete_id = request.form.get("delete_chat_id")
         chat_to_delete = Chat.query.filter_by(id=delete_id, user_id=user_id).first()
         if chat_to_delete:
             db.session.delete(chat_to_delete)
             db.session.commit()
 
-    # Load system prompts + selected
-    system_prompts = SystemPrompt.query.all()
-    selected_system_prompt = SystemPrompt.query.get(system_prompt_id) if system_prompt_id else None
+    # Handle prompt submission (POST)
+    elif request.method == "POST" and "prompt" in request.form:
+        selected_model = request.form.get("modell", "grog")
+        system_prompt_id = request.form.get("system_prompt_id")
+        new_prompt = request.form.get("prompt")
 
-    system_msg = None
-    temperature = 0.7
-    max_tokens = 150
-    if selected_system_prompt:
-        system_msg = {
-            "role": selected_system_prompt.role,
-            "content": selected_system_prompt.content
-        }
-        temperature = selected_system_prompt.temperature
-        max_tokens = selected_system_prompt.max_tokens
+        # Prepare system prompt (if selected)
+        selected_system_prompt = SystemPrompt.query.get(system_prompt_id) if system_prompt_id else None
+        system_msg = None
+        temperature = 0.7
+        max_tokens = 150
+        if selected_system_prompt:
+            system_msg = {
+                "role": selected_system_prompt.role,
+                "content": selected_system_prompt.content
+            }
+            temperature = selected_system_prompt.temperature
+            max_tokens = selected_system_prompt.max_tokens
 
-    if new_prompt:
+        # Gather chat history as context
         context_chats = Chat.query.filter_by(user_id=user_id).order_by(Chat.id.desc()).limit(30).all()
         context_chats.reverse()
-        context = "".join([f"User: {chat.question}\nAI: {chat.answer}\n" for chat in context_chats])
+        context = "".join([f"User: {c.question}\nAI: {c.answer}\n" for c in context_chats])
+        combined_prompt = context + f"User: {new_prompt}"
 
-        use_rag = request.args.get("use_rag") == "on"
-        if use_rag:
-            retrieved_docs = rag.retrieve_relevant_docs(new_prompt)
-            rag_context = "\n".join(retrieved_docs)
-            combined_prompt = rag_context + "\n\n" + context + f"User: {new_prompt}"
-        else:
-            combined_prompt = context + f"User: {new_prompt}"
-
+        # Call selected model
         if selected_model == "grog":
             answer = grogmodel.give_answer(combined_prompt, system_prompt_override=system_msg, temperature=temperature, max_tokens=max_tokens)
         elif selected_model == "chatgpt":
@@ -82,11 +85,12 @@ def prompt_area():
         else:
             answer = ("", "Model not supported.")
 
+        # Save response
         new_chat = Chat(user_id=user_id, question=new_prompt, answer=answer[1], model=selected_model)
         db.session.add(new_chat)
         db.session.commit()
 
-    # Reload recent chat history
+    # Load recent chat history
     chat_history = Chat.query.filter_by(user_id=user_id).order_by(Chat.id.desc()).limit(10).all()
     chat_history.reverse()
 
