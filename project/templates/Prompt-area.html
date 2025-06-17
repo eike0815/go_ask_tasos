@@ -2,32 +2,25 @@
 
 {% block content %}
 <h1 class="title">
-  Welcome, {{name}}!
+  Welcome, {{ name }}!
 </h1>
 
+<h2>What's your prompt:</h2>
+<form method="POST" action="{{ url_for('main.prompt_area') }}">
+  <div>
+    <label for="system_prompt_id">Choose a system prompt:</label>
+    <select name="system_prompt_id" id="system_prompt_id">
+      <option value="">-- no system prompt --</option>
+      {% for prompt in system_prompts %}
+        <option value="{{ prompt.id }}"
+          {% if selected_system_prompt_id == prompt.id|string %}selected{% endif %}>
+          {{ prompt.role }} – {{ prompt.content[:40] }}...
+        </option>
+      {% endfor %}
+    </select>
+  </div>
 
-<h2> What's your prompt:</h2>
-<form method="GET" action="{{ url_for('main.prompt_area',  user_id=current_user.id) }}">
-    <div>
-      <label for="system_prompt_id">choose a system-prompt:</label>
-      <select name="system_prompt_id" id="system_prompt_id">
-          <option value="">-- kein Systemprompt --</option>
-          {% for prompt in system_prompts %}
-              <option value="{{ prompt.id }}"
-                {% if selected_system_prompt_id == prompt.id|string %}selected{% endif %}>
-                {{ prompt.role }} – {{ prompt.content[:40] }}...
-              </option>
-          {% endfor %}
-      </select>
-    </div>
-<div style="margin-top: 1rem;">
-  <label>
-    <input type="checkbox" name="use_rag" {% if request.args.get('use_rag') == 'on' %}checked{% endif %}>
-    use knowledge database (RAG)
-  </label>
-</div>
-    <div class="textfeld-container">
-          <div style="display: flex; gap: 1rem; align-items: center;">
+  <div style="margin-top: 1rem;">
     <label>
       <input type="radio" name="modell" value="grog" {% if selected_model == 'grog' %}checked{% endif %}>
       Grogmodel
@@ -37,21 +30,25 @@
       ChatGPT-Model
     </label>
   </div>
-  <textarea id="autofeld" name="prompt" placeholder="prompt here..."></textarea>
-            <input class="textfeld-container" type="submit" value="ask">
 
-</div>
+  <div class="textfeld-container">
+    <textarea id="autofeld" name="prompt" placeholder="Enter your prompt here..."></textarea>
+    <input class="textfeld-container" type="submit" value="Ask">
+  </div>
 </form>
-{% if chat_history %}
-<div class="output">
-    <ul>
 
-        {% for chat in chat_history %}
-    <li><strong>you:</strong>{{ chat.question }}</li>
-        <li><strong>Tasos:</strong>{{ chat.answer }}</li>
-        {% endfor %}
-    </ul>
+<hr>
 
-</div>
-{% endif %}
+{% for chat in chat_history %}
+  <div class="chat-entry">
+    <p><strong>You:</strong> {{ chat.question }}</p>
+    <p><strong>AI:</strong> {{ chat.answer }}</p>
+
+    <form method="POST" style="display:inline;">
+      <input type="hidden" name="delete_chat_id" value="{{ chat.id }}">
+      <button type="submit" onclick="return confirm('Delete this message?')">Delete</button>
+    </form>
+  </div>
+{% endfor %}
+
 {% endblock %}

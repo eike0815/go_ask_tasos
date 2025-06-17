@@ -31,27 +31,29 @@ def prompt_area():
     Main chat interface:
     - Handles user prompts
     - Supports model selection (grog, chatgpt)
-    - Supports optional RAG (retrieval-augmented generation) context
     - Displays chat history and system prompts for the user
+    - Allows deletion of individual chat messages
     """
     user_id = current_user.id
-
     selected_model = request.args.get("modell", "grog")
     new_prompt = request.args.get("prompt")
     system_prompt_id = request.args.get("system_prompt_id")
 
-    # Fetch last 10 chat entries for display, ordered oldest to newest
-    chat_history = Chat.query.filter_by(user_id=user_id).order_by(Chat.id.desc()).limit(10).all()
-    chat_history.reverse()
+    # Handle deletion
+    delete_id = request.form.get("delete_chat_id")
+    if delete_id:
+        chat_to_delete = Chat.query.filter_by(id=delete_id, user_id=user_id).first()
+        if chat_to_delete:
+            db.session.delete(chat_to_delete)
+            db.session.commit()
 
+    # Load system prompts + selected
     system_prompts = SystemPrompt.query.all()
     selected_system_prompt = SystemPrompt.query.get(system_prompt_id) if system_prompt_id else None
 
-    # Defaults for system prompt parameters
     system_msg = None
     temperature = 0.7
     max_tokens = 150
-
     if selected_system_prompt:
         system_msg = {
             "role": selected_system_prompt.role,
@@ -61,18 +63,11 @@ def prompt_area():
         max_tokens = selected_system_prompt.max_tokens
 
     if new_prompt:
-        # Fetch up to last 30 chats for context, ordered oldest to newest
         context_chats = Chat.query.filter_by(user_id=user_id).order_by(Chat.id.desc()).limit(30).all()
         context_chats.reverse()
+        context = "".join([f"User: {chat.question}\nAI: {chat.answer}\n" for chat in context_chats])
 
-        # Build context string from those chats
-        context = ""
-        for chat in context_chats:
-            context += f"User: {chat.question}\nAI: {chat.answer}\n"
-
-        # Check if Retrieval-Augmented Generation (RAG) should be used
         use_rag = request.args.get("use_rag") == "on"
-
         if use_rag:
             retrieved_docs = rag.retrieve_relevant_docs(new_prompt)
             rag_context = "\n".join(retrieved_docs)
@@ -80,37 +75,20 @@ def prompt_area():
         else:
             combined_prompt = context + f"User: {new_prompt}"
 
-        # Call selected model to get answer
         if selected_model == "grog":
-            answer = grogmodel.give_answer(
-                combined_prompt,
-                system_prompt_override=system_msg,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
+            answer = grogmodel.give_answer(combined_prompt, system_prompt_override=system_msg, temperature=temperature, max_tokens=max_tokens)
         elif selected_model == "chatgpt":
-            answer = chatgptmodel.chat_answers_question(
-                combined_prompt,
-                system_prompt_override=system_msg,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
+            answer = chatgptmodel.chat_answers_question(combined_prompt, system_prompt_override=system_msg, temperature=temperature, max_tokens=max_tokens)
         else:
             answer = ("", "Model not supported.")
 
-        # Save the new chat entry
-        new_chat = Chat(
-            user_id=user_id,
-            question=new_prompt,
-            answer=answer[1],
-            model=selected_model
-        )
+        new_chat = Chat(user_id=user_id, question=new_prompt, answer=answer[1], model=selected_model)
         db.session.add(new_chat)
         db.session.commit()
 
-        # Refresh last 10 chats for display, ordered oldest to newest
-        chat_history = Chat.query.filter_by(user_id=user_id).order_by(Chat.id.desc()).limit(10).all()
-        chat_history.reverse()
+    # Reload recent chat history
+    chat_history = Chat.query.filter_by(user_id=user_id).order_by(Chat.id.desc()).limit(10).all()
+    chat_history.reverse()
 
     return render_template(
         'Prompt-area.html',
