@@ -48,12 +48,16 @@ source .venv/bin/activate  # macOS/Linux
 
 pip install -r requirements.txt
 
-4. Install and start Ollama
+4. Install and start Ollama and pull models
 
 Install Ollama if not already installed:
 https://ollama.com  # for download
 
 ollama serve
+
+!!! Required models (must be pulled before starting the app)
+ollama pull nomic-embed-text
+ollama pull llama3
 
 5. Run the application
 

@@ -3,9 +3,14 @@ import fitz  # PyMuPDF
 import os
 import pickle
 
-# Configuration
+
+"""# Configuration
 EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-base-en-v1.5-gguf'
-LANGUAGE_MODEL = 'hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF'
+LANGUAGE_MODEL = 'hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF'"""
+# Configuration (recommended defaults)
+EMBEDDING_MODEL = 'nomic-embed-text'
+LANGUAGE_MODEL = 'llama3'
+
 
 # In-memory vector store
 VECTOR_DB = []
