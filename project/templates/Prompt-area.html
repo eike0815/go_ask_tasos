@@ -27,6 +27,10 @@
       <input type="radio" name="modell" value="chatgpt" {% if selected_model == 'chatgpt' %}checked{% endif %}>
       ChatGPT-Model
     </label>
+    <label>
+      <input type="radio" name="modell" value="compare-both" {% if selected_model == 'compare-both' %}checked{% endif %}>
+      compare-both
+    </label>
   </div>
 
   <div class="textfeld-container">
@@ -40,7 +44,23 @@
 {% for chat in chat_history %}
   <div class="chat-entry">
     <p><strong>You:</strong> {{ chat.question }}</p>
-    <p><strong>AI:</strong> {{ chat.answer }}</p>
+
+    {% if chat.model == "compare-both" %}
+      {% set both = chat.answer | safe | loads %}
+      <p><strong>Grog:</strong> {{ both.grog }}</p>
+      <p><strong>Confidence:</strong> {{ both.grog_confidence or 'no confidence here' }}</p>
+      <p><strong>ChatGPT:</strong> {{ both.chatgpt }}</p>
+      <p><strong>Confidence:</strong> {{ both.chatgpt_confidence or 'no confidence here' }}</p>
+    {% else %}
+      {% set parsed = chat.answer | safe | loads %}
+      {% if parsed and parsed.answer %}
+        <p><strong>AI:</strong> {{ parsed.answer }}</p>
+        <p><strong>Confidence:</strong> {{ parsed.confidence or 'NAN' }}</p>
+      {% else %}
+        <p><strong>AI:</strong> {{ chat.answer }}</p>
+      {% endif %}
+    {% endif %}
+
     <form method="POST" style="display:inline;">
       <input type="hidden" name="delete_chat_id" value="{{ chat.id }}">
       <button type="submit" onclick="return confirm('Delete this message?')">🗑 Delete</button>

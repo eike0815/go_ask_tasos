@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-
+import json
 
 #initialising SQLAlchemy to make it useful
 db = SQLAlchemy()
@@ -11,6 +11,9 @@ def create_app():
 
     app.config['SECRET_KEY'] = 'secret_key_goes_here' #was soll das?
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
+
+    app.jinja_env.filters['loads'] = json.loads
+
 
     db.init_app(app)
 
