@@ -5,8 +5,8 @@ from project import grogmodel, chatgptmodel, ollama_rag
 from . import db
 from .models import Chat, User, SystemPrompt
 import os
-import re
 import json
+import re
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -29,8 +29,7 @@ def index():
 @main.route('/Prompt-area', methods=["POST", "GET"])
 @login_required
 def prompt_area():
-    import json
-    import re
+
 
     def extract_json_string(text):
         try:
@@ -75,8 +74,12 @@ def prompt_area():
             context = "".join([f"User: {chat.question}\nAI: {chat.answer}\n" for chat in context_chats])
             combined_prompt = context + f"User: {new_prompt}"
 
-            # Prepare answer based on selected model
+            # Defaults
             answer = "⚠️ No answer generated."
+            confidence = None
+            confidence_grog = None
+            confidence_chatgpt = None
+
             try:
                 if selected_model == "grog":
                     result = grogmodel.give_answer(
@@ -88,6 +91,7 @@ def prompt_area():
                     raw_output = result[1]
                     answer_dict = raw_output if isinstance(raw_output, dict) else extract_json_string(raw_output) or {}
                     answer = json.dumps(answer_dict)
+                    confidence = answer_dict.get("confidence", None)
 
                 elif selected_model == "chatgpt":
                     result = chatgptmodel.chat_answers_question(
@@ -99,8 +103,10 @@ def prompt_area():
                     raw_output = result[1]
                     answer_dict = raw_output if isinstance(raw_output, dict) else extract_json_string(raw_output) or {}
                     answer = json.dumps(answer_dict)
+                    confidence = answer_dict.get("confidence", None)
 
                 elif selected_model == "compare-both":
+                    # Beide Modelle aufrufen
                     grog_result = grogmodel.give_answer(
                         combined_prompt,
                         system_prompt_override=system_msg,
@@ -117,12 +123,20 @@ def prompt_area():
                     grog_output = grog_result[1]
                     chatgpt_output = chatgpt_result[1]
 
-                    grog_answer = grog_output.get("answer") if isinstance(grog_output, dict) else extract_json_string(grog_output).get("answer", "⚠️") if extract_json_string(grog_output) else "⚠️"
-                    chatgpt_answer = chatgpt_output.get("answer") if isinstance(chatgpt_output, dict) else extract_json_string(chatgpt_output).get("answer", "⚠️") if extract_json_string(chatgpt_output) else "⚠️"
+                    # JSON parsen
+                    grog_parsed = grog_output if isinstance(grog_output, dict) else extract_json_string(grog_output) or {}
+                    chatgpt_parsed = chatgpt_output if isinstance(chatgpt_output, dict) else extract_json_string(chatgpt_output) or {}
+
+                    grog_answer = grog_parsed.get("answer", "⚠️")
+                    chatgpt_answer = chatgpt_parsed.get("answer", "⚠️")
+                    confidence_grog = grog_parsed.get("confidence", None)
+                    confidence_chatgpt = chatgpt_parsed.get("confidence", None)
 
                     answer = json.dumps({
                         "grog": grog_answer,
-                        "chatgpt": chatgpt_answer
+                        "grog_confidence": confidence_grog,
+                        "chatgpt": chatgpt_answer,
+                        "chatgpt_confidence": confidence_chatgpt
                     })
 
                 else:
@@ -136,7 +150,10 @@ def prompt_area():
                 user_id=user_id,
                 question=new_prompt,
                 answer=answer,
-                model=selected_model
+                model=selected_model,
+                confidence=confidence,
+                confidence_grog=confidence_grog,
+                confidence_chatgpt=confidence_chatgpt
             )
             db.session.add(new_chat)
             db.session.commit()

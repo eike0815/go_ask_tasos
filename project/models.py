@@ -15,6 +15,9 @@ class Chat(db.Model):
     question = db.Column(db.String, unique=False)
     answer = db.Column(db.String, unique=False, nullable=True)
     model = db.Column(db.String, unique=False, nullable=True)
+    confidence = db.Column(db.Float, nullable=True)
+    confidence_grog = db.Column(db.Float, nullable=True)
+    confidence_chatgpt = db.Column(db.Float, nullable=True)
    # created_at = db.Column(db.Datetime, default=datetime.utcnow)
 
 
