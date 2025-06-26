@@ -1,7 +1,6 @@
 import openai
 from dotenv import load_dotenv
 import os
-import re
 import json
 
 load_dotenv()
@@ -10,38 +9,31 @@ client = openai.OpenAI(api_key=api_key)
 
 model = "gpt-4o-mini"
 
-def extract_json_block(response_text):
-    """
-    Extracts the first JSON block from a string using regex.
-    Returns a Python dict if successful, else None.
-    """
-    try:
-        match = re.search(r'\{.*\}', response_text, re.DOTALL)
-        if match:
-            json_str = match.group()
-            return json.loads(json_str)
-        else:
-            raise ValueError("No JSON block found")
-    except Exception as e:
-        print("❌ Failed to extract JSON:", e)
-        return None
+# JSON-Schema für forced structured output
+schema = {
+    "name": "answer_schema",
+    "type": "object",
+    "strict": True,
+    "properties": {
+        "answer": {"type": "string"},
+        "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+        }
+    },
+    "required": ["answer", "confidence"],
+    "additionalProperties": False
+}
 
 def chat_answers_question(prompt_from_area, system_prompt_override=None, temperature=0.7, max_tokens=150):
     """
-    Calls the GPT model and returns a structured JSON response containing 'answer' and 'confidence'.
-    If the model returns extra text, it tries to extract and parse the JSON block.
+    Calls the GPT model and returns a structured JSON response with 'answer' and 'confidence',
+    enforced via OpenAI's structured output (response_format: json_schema).
     """
-    user_prompt = f"""
-    Please answer the following question and respond in JSON format with two keys:
-    - "answer": your main answer
-    - "confidence": a number between 0 and 1 indicating your confidence
-
-    Question: {prompt_from_area}
-    """
-
     system_message = system_prompt_override or {
         "role": "system",
-        "content": "You are a helpful assistant that always responds with a JSON object."
+        "content": "You are a helpful assistant. Always respond using the required JSON structure."
     }
 
     try:
@@ -49,19 +41,23 @@ def chat_answers_question(prompt_from_area, system_prompt_override=None, tempera
             model=model,
             messages=[
                 system_message,
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": prompt_from_area}
             ],
             temperature=temperature,
             max_tokens=max_tokens,
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "schema": schema,
+                    "name": "answer_schema"
+                }
+            }
         )
 
-        response_text = response.choices[0].message.content
-        parsed_json = extract_json_block(response_text)
+        response_json = response.choices[0].message.content
+        parsed_json = json.loads(response_json)
 
-        if parsed_json:
-            return "Structured response:", parsed_json
-        else:
-            return "⚠️ Could not parse structured output", response_text
+        return "✅ Structured response:", parsed_json
 
     except Exception as e:
         return "❌ Error during completion:", str(e)

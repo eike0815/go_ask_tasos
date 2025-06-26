@@ -101,7 +101,12 @@ def prompt_area():
                         max_tokens=max_tokens
                     )
                     raw_output = result[1]
-                    answer_dict = raw_output if isinstance(raw_output, dict) else extract_json_string(raw_output) or {}
+                    print("🔍 Raw output from GPT:", repr(raw_output))
+
+                    try:
+                        answer_dict = raw_output if isinstance(raw_output, dict) else json.loads(raw_output)
+                    except Exception:
+                        answer_dict = {}
                     answer = json.dumps(answer_dict)
                     confidence = answer_dict.get("confidence", None)
 
