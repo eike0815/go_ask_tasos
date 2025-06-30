@@ -93,8 +93,8 @@ go_ask_tasos/
 │   │   └── signup.html      
 │   ├── static/                     # CSS 
 │   ├── uploads/                    # Uploaded PDFs
-│   ├── .env/                       # place your api keys in here
 │   └── vector_store/               # Saved vector DBs (.pkl)
+├── .env/                           # place your api keys in here
 ├── requirements.txt
 └── README.md
 ⚙️ Configuration
