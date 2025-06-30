@@ -26,20 +26,10 @@ def index():
     """Render homepage."""
     return render_template('index.html')
 
+
 @main.route('/Prompt-area', methods=["POST", "GET"])
 @login_required
 def prompt_area():
-
-
-    def extract_json_string(text):
-        try:
-            json_match = re.search(r'\{(?:[^{}]|(?R))*\}', text, re.DOTALL)
-            if json_match:
-                return json.loads(json_match.group())
-        except Exception:
-            pass
-        return None
-
     user_id = current_user.id
 
     if request.method == "POST":
@@ -48,14 +38,12 @@ def prompt_area():
         system_prompt_id = request.form.get("system_prompt_id")
         delete_id = request.form.get("delete_chat_id")
 
-        # Delete chat entry
         if delete_id:
             chat_to_delete = Chat.query.filter_by(id=delete_id, user_id=user_id).first()
             if chat_to_delete:
                 db.session.delete(chat_to_delete)
                 db.session.commit()
 
-        # Load system prompt (if any)
         system_prompts = SystemPrompt.query.all()
         selected_system_prompt = SystemPrompt.query.get(system_prompt_id) if system_prompt_id else None
 
@@ -68,13 +56,11 @@ def prompt_area():
         max_tokens = selected_system_prompt.max_tokens if selected_system_prompt else 150
 
         if new_prompt:
-            # Build context
             context_chats = Chat.query.filter_by(user_id=user_id).order_by(Chat.id.desc()).limit(30).all()
             context_chats.reverse()
             context = "".join([f"User: {chat.question}\nAI: {chat.answer}\n" for chat in context_chats])
             combined_prompt = context + f"User: {new_prompt}"
 
-            # Defaults
             answer = "⚠️ No answer generated."
             confidence = None
             confidence_grog = None
@@ -89,9 +75,11 @@ def prompt_area():
                         max_tokens=max_tokens
                     )
                     raw_output = result[1]
-                    answer_dict = raw_output if isinstance(raw_output, dict) else extract_json_string(raw_output) or {}
+                    print("🟢 Raw output from Groq:", raw_output)
+
+                    answer_dict = raw_output if isinstance(raw_output, dict) else {}
                     answer = json.dumps(answer_dict)
-                    confidence = answer_dict.get("confidence", None)
+                    confidence = answer_dict.get("confidence")
 
                 elif selected_model == "chatgpt":
                     result = chatgptmodel.chat_answers_question(
@@ -101,17 +89,17 @@ def prompt_area():
                         max_tokens=max_tokens
                     )
                     raw_output = result[1]
-                    print("🔍 Raw output from GPT:", repr(raw_output))
+                    print("🔵 Raw output from GPT:", repr(raw_output))
 
                     try:
                         answer_dict = raw_output if isinstance(raw_output, dict) else json.loads(raw_output)
                     except Exception:
                         answer_dict = {}
+
                     answer = json.dumps(answer_dict)
-                    confidence = answer_dict.get("confidence", None)
+                    confidence = answer_dict.get("confidence")
 
                 elif selected_model == "compare-both":
-                    # Beide Modelle aufrufen
                     grog_result = grogmodel.give_answer(
                         combined_prompt,
                         system_prompt_override=system_msg,
@@ -128,14 +116,13 @@ def prompt_area():
                     grog_output = grog_result[1]
                     chatgpt_output = chatgpt_result[1]
 
-                    # JSON parsen
-                    grog_parsed = grog_output if isinstance(grog_output, dict) else extract_json_string(grog_output) or {}
-                    chatgpt_parsed = chatgpt_output if isinstance(chatgpt_output, dict) else extract_json_string(chatgpt_output) or {}
+                    grog_parsed = grog_output if isinstance(grog_output, dict) else {}
+                    chatgpt_parsed = chatgpt_output if isinstance(chatgpt_output, dict) else {}
 
                     grog_answer = grog_parsed.get("answer", "⚠️")
                     chatgpt_answer = chatgpt_parsed.get("answer", "⚠️")
-                    confidence_grog = grog_parsed.get("confidence", None)
-                    confidence_chatgpt = chatgpt_parsed.get("confidence", None)
+                    confidence_grog = grog_parsed.get("confidence")
+                    confidence_chatgpt = chatgpt_parsed.get("confidence")
 
                     answer = json.dumps({
                         "grog": grog_answer,
@@ -150,7 +137,6 @@ def prompt_area():
             except Exception as e:
                 answer = json.dumps({"error": f"Exception during model call: {str(e)}"})
 
-            # Save to DB
             new_chat = Chat(
                 user_id=user_id,
                 question=new_prompt,
@@ -179,7 +165,6 @@ def prompt_area():
         selected_system_prompt_id=system_prompt_id,
         selected_model=selected_model
     )
-
 
 
 @main.route('/modification', methods=["GET", "POST"])
